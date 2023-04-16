@@ -1,0 +1,12 @@
+{
+    "name": "com.evanz.unitygraphingpackage",
+    "version": "1.0.0",
+    "displayName": "EvanZ Graphing Tool",
+    "description": "A tool that helps you creat graphs and charts in unity.",
+    "unity": "2021.3",
+    "author": {
+        "name": "Evan Zhao",
+        "email": "evanz01@outlook.com",
+        "url": ""
+    }
+}
