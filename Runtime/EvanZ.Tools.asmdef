@@ -2,7 +2,14 @@
     "name": "EvanZ.Tools",
     "rootNamespace": "",
     "references": [
-        "Unity.TextMeshPro"
+        "Microsoft.MixedReality.Toolkit.Core",
+        "Microsoft.MixedReality.Toolkit.Data",
+        "Microsoft.MixedReality.GraphicsTools",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "Unity.XR.Interaction.Toolkit",
+        "Microsoft.MixedReality.Toolkit.SpatialManipulation",
+        "Microsoft.MixedReality.Toolkit.UXCore"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

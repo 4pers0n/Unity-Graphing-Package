@@ -3,19 +3,24 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Microsoft.MixedReality.Toolkit.UX;
 
 namespace EvanZ.Tools
 {
     public class Window_Graph : MonoBehaviour
     {
+        private static Window_Graph Instance;
+
         [SerializeField] private RectTransform _graphContainer;
         [SerializeField] private Sprite _dotSprite;
         [SerializeField] private GameObject _labelTemplateX;
         [SerializeField] private GameObject _labelTemplateY;
         [SerializeField] private GameObject _dashTemplateX;
         [SerializeField] private GameObject _dashTemplateY;
+        [SerializeField] private GameObject _toolTip;
 
         private List<GameObject> _gameObjectsList;
+        private List<IGraphVisualObject> _graphVisualObjectsList;
 
         // Cached values
         private List<int> _valueList;
@@ -29,14 +34,18 @@ namespace EvanZ.Tools
 
         private void Awake()
         {
+            Instance = this;
+
+            _toolTip.SetActive(false);
             _gameObjectsList = new();
+            _graphVisualObjectsList = new();
 
             _valueList = new List<int>() { 5, 23, 12, 4, 45, 80, 105, 203 };
 
             lineGraphVisual = new(_graphContainer, _dotSprite, Color.green, Color.blue);
             barChartVisual = new(_graphContainer, Color.green, .9f);
 
-            ShowGraph(_valueList, lineGraphVisual, -1);
+            ShowGraph(_valueList, barChartVisual, -1);
         }
 
         public void SetGraphVisualToBar()
@@ -54,6 +63,41 @@ namespace EvanZ.Tools
         public void DecreaseVisibleAmount()
         {
             ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount - 1, _getAxisLabelX, _getAxisLabelY);
+        }
+        public void ChangeAxisYUnits(string unit)
+        {
+            _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + " " + unit; };
+            ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
+        }
+
+        public static void ShowToolTip_Static(string tooltipText, Vector2 anchoredPosition)
+        {
+            Instance.ShowToolTip(tooltipText, anchoredPosition);
+        }
+
+        private void ShowToolTip(string tooltipText, Vector2 anchoredPosition)
+        {
+            _toolTip.SetActive(true);
+            float textPaddingSize = 4f;
+            TMP_Text textComponent = _toolTip.GetComponentInChildren<TMP_Text>();
+            textComponent.text = tooltipText;
+            Vector2 backgroundSize = new Vector2(
+                textComponent.preferredWidth + textPaddingSize * 2f,
+                textComponent.preferredHeight + textPaddingSize * 2f
+            );
+            _toolTip.transform.Find("Background").GetComponent<RectTransform>().sizeDelta = backgroundSize;
+            _toolTip.GetComponent<RectTransform>().anchoredPosition = anchoredPosition;
+            _toolTip.transform.SetAsLastSibling();
+        }
+
+        public static void HideToolTip_Static()
+        {
+            Instance.HideToolTip();
+        }
+
+        private void HideToolTip()
+        {
+            _toolTip.SetActive(false);
         }
 
         private void ShowGraph(List<int> valueList, IGraphVisual graphVisual,
@@ -85,6 +129,11 @@ namespace EvanZ.Tools
                 Destroy(gameObject);
             }
             _gameObjectsList.Clear();
+            foreach (IGraphVisualObject graphVisualObject in _graphVisualObjectsList)
+            {
+                graphVisualObject.CleanUp();
+            }
+            _graphVisualObjectsList.Clear();
 
             float graphWidth = _graphContainer.sizeDelta.x;
             float graphHeight = _graphContainer.sizeDelta.y;
@@ -118,16 +167,17 @@ namespace EvanZ.Tools
                 float xPosition = xSize + xIndex * xSize;
                 float yPosition = (_valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
 
-                _gameObjectsList.AddRange(_graphVisual.AddGraphVisual(new Vector2(xPosition, yPosition), xSize));
+                string toolTipText = _getAxisLabelY(_valueList[i]);
+                _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), xSize, toolTipText));
 
                 RectTransform labelX = Instantiate(_labelTemplateX).GetComponent<RectTransform>();
-                labelX.SetParent(_graphContainer);
+                labelX.SetParent(_graphContainer, false);
                 labelX.anchoredPosition = new Vector2(xPosition, 0f);
                 labelX.GetComponent<TMP_Text>().text = _getAxisLabelX(i);
                 _gameObjectsList.Add(labelX.gameObject);
 
                 RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
-                dashX.SetParent(_graphContainer);
+                dashX.SetParent(_graphContainer, false);
                 dashX.anchoredPosition = new Vector2(xPosition, -20f);
                 _gameObjectsList.Add(dashX.gameObject);
 
@@ -138,7 +188,7 @@ namespace EvanZ.Tools
             for (int i = 0; i <= separatorCount; i++)
             {
                 RectTransform labelY = Instantiate(_labelTemplateY).GetComponent<RectTransform>();
-                labelY.SetParent(_graphContainer);
+                labelY.SetParent(_graphContainer, false);
                 float normalizedValue = i * 1f / separatorCount;
                 labelY.anchoredPosition = new Vector2(-7f, normalizedValue * graphHeight);
                 labelY.GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
@@ -146,7 +196,7 @@ namespace EvanZ.Tools
 
 
                 RectTransform dashY = Instantiate(_dashTemplateY).GetComponent<RectTransform>();
-                dashY.SetParent(_graphContainer);
+                dashY.SetParent(_graphContainer, false);
                 dashY.anchoredPosition = new Vector2(-4f, normalizedValue * graphHeight);
                 _gameObjectsList.Add(dashY.gameObject);
             }
@@ -154,7 +204,13 @@ namespace EvanZ.Tools
 
         private interface IGraphVisual
         {
-            List<GameObject> AddGraphVisual(Vector2 graphPosition, float graphPositionWidth);
+            IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText);
+        }
+
+        private interface IGraphVisualObject
+        {
+            void SetGraphVisualObjectInfo(Vector2 graphPosition, float graphPositionWidth, string toolTipText);
+            void CleanUp();
         }
 
         private class BarChartVisual : IGraphVisual
@@ -170,10 +226,14 @@ namespace EvanZ.Tools
                 _barWidthMultiplier = barWidthMultiplier;
             }
 
-            public List<GameObject> AddGraphVisual(Vector2 graphPosition, float graphPositionWidth)
+            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
             {
                 GameObject barGameObject = CreateBar(graphPosition, graphPositionWidth * _barWidthMultiplier);
-                return new List<GameObject>() { barGameObject };
+
+                BarChartViusalObject barChartViusalObject = new(barGameObject, _barWidthMultiplier);
+                barChartViusalObject.SetGraphVisualObjectInfo(graphPosition, graphPositionWidth, toolTipText);
+
+                return barChartViusalObject;
             }
 
             private GameObject CreateBar(Vector2 graphPosition, float barWidth)
@@ -187,6 +247,9 @@ namespace EvanZ.Tools
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
                 rectTransform.pivot = new Vector2(0.5f, 0f);
+
+                gameObject.AddComponent<BoxCollider>();
+                gameObject.AddComponent<PressableButton>();
                 return gameObject;
             }
         }
@@ -195,7 +258,7 @@ namespace EvanZ.Tools
         {
             private RectTransform _graphContainer;
             private Sprite _dotSprite;
-            private GameObject _lastDotGameObject;
+            private LineGraphVisualObject _lastLineGraphVisualObject;
             private Color _dotColor;
             private Color _dotConnectionColor;
 
@@ -203,27 +266,33 @@ namespace EvanZ.Tools
             {
                 _graphContainer = graphContainer;
                 _dotSprite = dotSprite;
-                _lastDotGameObject = null;
+                _lastLineGraphVisualObject = null;
                 _dotColor = dotColor;
                 _dotConnectionColor = dotConnectionColor;
             }
 
-            public void ResetLastDotGameObject() => _lastDotGameObject = null;
+            public void ResetLastDotGameObject() => _lastLineGraphVisualObject = null;
 
-            public List<GameObject> AddGraphVisual(Vector2 graphPosition, float graphPositionWidth)
+            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
             {
                 List<GameObject> gameObjectsList = new();
                 GameObject dotGameObject = CreateDot(graphPosition);
+
                 gameObjectsList.Add(dotGameObject);
-                if (_lastDotGameObject != null)
+                GameObject dotConnectionGameObject = null;
+                if (_lastLineGraphVisualObject != null)
                 {
-                    GameObject dotConnectionGameObject = CreateDotConnection(_lastDotGameObject.GetComponent<RectTransform>().anchoredPosition,
+                    dotConnectionGameObject = CreateDotConnection(_lastLineGraphVisualObject.GetGraphPosition(),
                         dotGameObject.GetComponent<RectTransform>().anchoredPosition);
                     gameObjectsList.Add(dotConnectionGameObject);
                 }
-                _lastDotGameObject = dotGameObject;
 
-                return gameObjectsList;
+                LineGraphVisualObject lineGraphVisualObject = new(dotGameObject, dotConnectionGameObject, _lastLineGraphVisualObject);
+                lineGraphVisualObject.SetGraphVisualObjectInfo(graphPosition, graphPositionWidth, toolTipText);
+
+                _lastLineGraphVisualObject = lineGraphVisualObject;
+
+                return lineGraphVisualObject;
             }
 
             private GameObject CreateDot(Vector2 anchoredPosition)
@@ -237,13 +306,16 @@ namespace EvanZ.Tools
                 rectTransform.sizeDelta = new Vector2(11, 11);
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
+
+                gameObject.AddComponent<BoxCollider>();
+                gameObject.AddComponent<PressableButton>();
                 return gameObject;
             }
 
             private GameObject CreateDotConnection(Vector2 dotPositionA, Vector2 dotPositionB)
             {
                 GameObject gameObject = new GameObject("dotConnection", typeof(Image));
-                gameObject.transform.SetParent(_graphContainer);
+                gameObject.transform.SetParent(_graphContainer, false);
                 gameObject.GetComponent<Image>().color = _dotConnectionColor;
                 RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
                 Vector2 dir = (dotPositionB - dotPositionA).normalized;
@@ -256,5 +328,105 @@ namespace EvanZ.Tools
                 return gameObject;
             }
         }
+
+        public class BarChartViusalObject : IGraphVisualObject
+        {
+            private GameObject _barGameObject;
+            private float _barWidthMultiplier;
+
+            public BarChartViusalObject(GameObject barGameObject, float barWidthMultiplier)
+            {
+                _barGameObject = barGameObject;
+                _barWidthMultiplier = barWidthMultiplier;
+            }
+
+            public void SetGraphVisualObjectInfo(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
+            {
+                RectTransform rectTransform = _barGameObject.GetComponent<RectTransform>();
+                rectTransform.anchoredPosition = new Vector2(graphPosition.x, 0f);
+                rectTransform.sizeDelta = new Vector2(graphPositionWidth * _barWidthMultiplier, graphPosition.y);
+
+                BoxCollider boxCollider = _barGameObject.GetComponent<BoxCollider>();
+                boxCollider.size = new Vector3(rectTransform.sizeDelta.x, rectTransform.sizeDelta.y, 1.0f);
+                boxCollider.center = new Vector3(0, rectTransform.sizeDelta.y / 2, 0);
+                PressableButton pressableButton = _barGameObject.GetComponent<PressableButton>();
+                pressableButton.IsGazeHovered.OnEntered.AddListener((t) => ShowToolTip_Static(toolTipText, graphPosition));
+                pressableButton.IsGazeHovered.OnExited.AddListener((t) => HideToolTip_Static());
+            }
+
+            public void CleanUp()
+            {
+                Destroy(_barGameObject);
+            }
+        }
+
+        public class LineGraphVisualObject : IGraphVisualObject
+        {
+            public event EventHandler OnChangeGraphVisualObjectInfo;
+            private GameObject _dotGameObject;
+            private GameObject _dotConnectionGameObject;
+            private LineGraphVisualObject _lastVisualObject;
+            public LineGraphVisualObject(GameObject dotGameObject, GameObject dotConnectionGameObject, LineGraphVisualObject lastVisualObject)
+            {
+                _dotGameObject = dotGameObject;
+                _dotConnectionGameObject = dotConnectionGameObject;
+                _lastVisualObject = lastVisualObject;
+
+                if (_lastVisualObject != null)
+                {
+                    _lastVisualObject.OnChangeGraphVisualObjectInfo += LastVisualObject_OnChangeGraphVisualObjectInfo;
+                }
+            }
+
+            private void LastVisualObject_OnChangeGraphVisualObjectInfo(object sender, EventArgs e)
+            {
+                UpdateDotConnection();
+            }
+
+            public void SetGraphVisualObjectInfo(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
+            {
+                RectTransform rectTransform = _dotGameObject.GetComponent<RectTransform>();
+                rectTransform.anchoredPosition = graphPosition;
+
+                UpdateDotConnection();
+
+                BoxCollider boxCollider = _dotGameObject.GetComponent<BoxCollider>();
+                boxCollider.size = new Vector3(rectTransform.sizeDelta.x, rectTransform.sizeDelta.y, 1.0f);
+                boxCollider.center = new Vector3(0, 0, 0);
+                PressableButton pressableButton = _dotGameObject.GetComponent<PressableButton>();
+                pressableButton.IsGazeHovered.OnEntered.AddListener((t) => ShowToolTip_Static(toolTipText, graphPosition));
+                pressableButton.IsGazeHovered.OnExited.AddListener((t) => HideToolTip_Static());
+
+                OnChangeGraphVisualObjectInfo?.Invoke(this, EventArgs.Empty);
+            }
+
+            public void CleanUp()
+            {
+                Destroy(_dotGameObject);
+                Destroy(_dotConnectionGameObject);
+            }
+
+            public Vector2 GetGraphPosition()
+            {
+                RectTransform rectTransform = _dotGameObject.GetComponent<RectTransform>();
+                return rectTransform.anchoredPosition;
+            }
+
+            private void UpdateDotConnection()
+            {
+                if (_dotConnectionGameObject != null)
+                {
+                    RectTransform dotConnectionRectTransform = _dotConnectionGameObject.GetComponent<RectTransform>();
+                    Vector2 dir = (_lastVisualObject.GetGraphPosition() - GetGraphPosition()).normalized;
+                    float distance = Vector2.Distance(GetGraphPosition(), _lastVisualObject.GetGraphPosition());
+                    dotConnectionRectTransform.anchorMin = new Vector2(0, 0);
+                    dotConnectionRectTransform.anchorMax = new Vector2(0, 0);
+                    dotConnectionRectTransform.sizeDelta = new Vector2(distance, 3f);
+                    dotConnectionRectTransform.anchoredPosition = GetGraphPosition() + dir * distance * 0.5f;
+                    dotConnectionRectTransform.localEulerAngles = new Vector3(0, 0, Utils.GetAngleFromVectorFloat(dir));
+                }
+            }
+        }
     }
 }
+
