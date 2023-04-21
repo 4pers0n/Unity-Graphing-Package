@@ -197,7 +197,7 @@ namespace EvanZ.Tools
                 RectTransform labelY = Instantiate(_labelTemplateY).GetComponent<RectTransform>();
                 labelY.SetParent(_graphContainer, false);
                 float normalizedValue = i * 1f / separatorCount;
-                labelY.anchoredPosition = new Vector2(-40f, normalizedValue * graphHeight);
+                labelY.anchoredPosition = new Vector2(-20f, normalizedValue * graphHeight);
                 labelY.GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
                 _gameObjectsList.Add(labelY.gameObject);
                 _yLabelList.Add(labelY);
@@ -386,7 +386,7 @@ namespace EvanZ.Tools
                 gameObject.GetComponent<Image>().color = _dotColor;
                 RectTransform rectTransform = gameObject.GetComponent<RectTransform>();
                 rectTransform.anchoredPosition = anchoredPosition;
-                rectTransform.sizeDelta = new Vector2(11, 11);
+                rectTransform.sizeDelta = new Vector2(6, 6);
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
 
@@ -504,7 +504,7 @@ namespace EvanZ.Tools
                     float distance = Vector2.Distance(GetGraphPosition(), _lastVisualObject.GetGraphPosition());
                     dotConnectionRectTransform.anchorMin = new Vector2(0, 0);
                     dotConnectionRectTransform.anchorMax = new Vector2(0, 0);
-                    dotConnectionRectTransform.sizeDelta = new Vector2(distance, 3f);
+                    dotConnectionRectTransform.sizeDelta = new Vector2(distance, 1.6f);
                     dotConnectionRectTransform.anchoredPosition = GetGraphPosition() + dir * distance * 0.5f;
                     dotConnectionRectTransform.localEulerAngles = new Vector3(0, 0, Utils.GetAngleFromVectorFloat(dir));
                 }
