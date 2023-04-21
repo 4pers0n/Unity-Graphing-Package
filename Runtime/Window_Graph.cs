@@ -291,7 +291,7 @@ namespace EvanZ.Tools
                 yMinimum /= 1.2f;
             }
 
-            if (_useHorizontalDash)
+            if (_customizeStartEnd)
             {
                 yMinimum = _startYAt;
                 yMaximum = _endYAt;
