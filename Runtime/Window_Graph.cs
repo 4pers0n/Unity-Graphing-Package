@@ -47,10 +47,10 @@ namespace EvanZ.Tools
 
             _valueList = new List<int>() { 5, 23, 12, 4, 45, 80, 105, 203 };
 
-            lineGraphVisual = new(_graphContainer, _dotSprite, Color.green, Color.blue);
+            lineGraphVisual = new(_graphContainer, _dotSprite, Color.white, Color.white);
             barChartVisual = new(_graphContainer, Color.green, .9f);
 
-            ShowGraph(_valueList, barChartVisual, -1);
+            ShowGraph(_valueList, lineGraphVisual, -1);
         }
 
         public void UpdateValueList(List<int> values)
@@ -176,6 +176,7 @@ namespace EvanZ.Tools
                 RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
                 dashX.SetParent(_graphContainer, false);
                 dashX.anchoredPosition = new Vector2(xPosition, -20f);
+                dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
                 _gameObjectsList.Add(dashX.gameObject);
 
                 xIndex++;
@@ -187,7 +188,7 @@ namespace EvanZ.Tools
                 RectTransform labelY = Instantiate(_labelTemplateY).GetComponent<RectTransform>();
                 labelY.SetParent(_graphContainer, false);
                 float normalizedValue = i * 1f / separatorCount;
-                labelY.anchoredPosition = new Vector2(-7f, normalizedValue * graphHeight);
+                labelY.anchoredPosition = new Vector2(-40f, normalizedValue * graphHeight);
                 labelY.GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
                 _gameObjectsList.Add(labelY.gameObject);
                 _yLabelList.Add(labelY);
@@ -195,6 +196,7 @@ namespace EvanZ.Tools
                 RectTransform dashY = Instantiate(_dashTemplateY).GetComponent<RectTransform>();
                 dashY.SetParent(_graphContainer, false);
                 dashY.anchoredPosition = new Vector2(-4f, normalizedValue * graphHeight);
+                dashY.sizeDelta = new Vector2(_graphContainer.sizeDelta.x, dashY.sizeDelta.y);
                 _gameObjectsList.Add(dashY.gameObject);
             }
         }
