@@ -21,6 +21,7 @@ namespace EvanZ.Tools
 
         private List<GameObject> _gameObjectsList;
         private List<IGraphVisualObject> _graphVisualObjectsList;
+        private List<RectTransform> _yLabelList;
 
         // Cached values
         private List<int> _valueList;
@@ -28,6 +29,8 @@ namespace EvanZ.Tools
         private int _maxVisibleValueAmount = -1;
         private Func<int, string> _getAxisLabelX = null;
         private Func<float, string> _getAxisLabelY = null;
+        private float _xSize;
+        private bool _startYScaleAtZero;
 
         private BarChartVisual barChartVisual;
         private LineGraphVisual lineGraphVisual;
@@ -39,12 +42,20 @@ namespace EvanZ.Tools
             _toolTip.SetActive(false);
             _gameObjectsList = new();
             _graphVisualObjectsList = new();
+            _yLabelList = new();
+            _startYScaleAtZero = true;
 
             _valueList = new List<int>() { 5, 23, 12, 4, 45, 80, 105, 203 };
 
             lineGraphVisual = new(_graphContainer, _dotSprite, Color.green, Color.blue);
             barChartVisual = new(_graphContainer, Color.green, .9f);
 
+            ShowGraph(_valueList, barChartVisual, -1);
+        }
+
+        public void UpdateValueList(List<int> values)
+        {
+            _valueList = values;
             ShowGraph(_valueList, barChartVisual, -1);
         }
 
@@ -129,6 +140,7 @@ namespace EvanZ.Tools
                 Destroy(gameObject);
             }
             _gameObjectsList.Clear();
+            _yLabelList.Clear();
             foreach (IGraphVisualObject graphVisualObject in _graphVisualObjectsList)
             {
                 graphVisualObject.CleanUp();
@@ -138,25 +150,10 @@ namespace EvanZ.Tools
             float graphWidth = _graphContainer.sizeDelta.x;
             float graphHeight = _graphContainer.sizeDelta.y;
 
-            float yMaximum = _valueList[0];
-            float yMinimum = _valueList[0];
-            for (int i = Mathf.Max(_valueList.Count - _maxVisibleValueAmount, 0); i < _valueList.Count; i++)
-            {
-                int value = _valueList[i];
-                if (value > yMaximum)
-                    yMaximum = value;
-                if (value < yMinimum)
-                    yMinimum = value;
-            }
-            yMaximum = yMaximum + (yMaximum - yMinimum) * 0.2f;
-            yMinimum = yMinimum - (yMaximum - yMinimum) * 0.2f;
-            if (yMaximum == yMinimum)
-            {
-                yMaximum *= 1.2f;
-                yMinimum /= 1.2f;
-            }
+            float yMinimum, yMaximum;
+            CalculateYScale(out yMinimum, out yMaximum);
 
-            float xSize = graphWidth / (_maxVisibleValueAmount + 1);
+            _xSize = graphWidth / (_maxVisibleValueAmount + 1);
             int xIndex = 0;
 
             if (_graphVisual is LineGraphVisual visual)
@@ -164,11 +161,11 @@ namespace EvanZ.Tools
 
             for (int i = Mathf.Max(_valueList.Count - _maxVisibleValueAmount, 0); i < _valueList.Count; i++)
             {
-                float xPosition = xSize + xIndex * xSize;
+                float xPosition = _xSize + xIndex * _xSize;
                 float yPosition = (_valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
 
                 string toolTipText = _getAxisLabelY(_valueList[i]);
-                _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), xSize, toolTipText));
+                _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText));
 
                 RectTransform labelX = Instantiate(_labelTemplateX).GetComponent<RectTransform>();
                 labelX.SetParent(_graphContainer, false);
@@ -193,12 +190,87 @@ namespace EvanZ.Tools
                 labelY.anchoredPosition = new Vector2(-7f, normalizedValue * graphHeight);
                 labelY.GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
                 _gameObjectsList.Add(labelY.gameObject);
-
+                _yLabelList.Add(labelY);
 
                 RectTransform dashY = Instantiate(_dashTemplateY).GetComponent<RectTransform>();
                 dashY.SetParent(_graphContainer, false);
                 dashY.anchoredPosition = new Vector2(-4f, normalizedValue * graphHeight);
                 _gameObjectsList.Add(dashY.gameObject);
+            }
+        }
+
+        private void UpdateValue(int index, int value)
+        {
+            float yMinimumBefore, yMaximumBefore;
+            CalculateYScale(out yMinimumBefore, out yMaximumBefore);
+
+            _valueList[index] = value;
+
+            float graphWidth = _graphContainer.sizeDelta.x;
+            float graphHeight = _graphContainer.sizeDelta.y;
+
+            float yMinimum, yMaximum;
+            CalculateYScale(out yMinimum, out yMaximum);
+
+            bool yScaleChanged = yMinimumBefore != yMinimum || yMaximumBefore != yMaximum;
+
+            if (!yScaleChanged)
+            {
+                float xPosition = _xSize + index * _xSize;
+                float yPosition = (value - yMinimum) / (yMaximum - yMinimum) * graphHeight;
+
+                string toolTipText = _getAxisLabelY(value);
+                _graphVisualObjectsList[index].SetGraphVisualObjectInfo(new Vector2(xPosition, yPosition), _xSize, toolTipText);
+            }
+            else
+            {
+                int xIndex = 0;
+
+                if (_graphVisual is LineGraphVisual visual)
+                    visual.ResetLastDotGameObject();
+
+                for (int i = Mathf.Max(_valueList.Count - _maxVisibleValueAmount, 0); i < _valueList.Count; i++)
+                {
+                    float xPosition = _xSize + xIndex * _xSize;
+                    float yPosition = (_valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
+
+                    string toolTipText = _getAxisLabelY(_valueList[i]);
+                    _graphVisualObjectsList[xIndex].SetGraphVisualObjectInfo(new Vector2(xPosition, yPosition), _xSize, toolTipText);
+
+                    xIndex++;
+                }
+
+                for (int i = 0; i < _yLabelList.Count; i++)
+                {
+                    float normalizedValue = i * 1f / _yLabelList.Count;
+                    _yLabelList[i].GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
+                }
+            }
+        }
+
+        private void CalculateYScale(out float yMinimum, out float yMaximum)
+        {
+            yMaximum = _valueList[0];
+            yMinimum = _valueList[0];
+            for (int i = Mathf.Max(_valueList.Count - _maxVisibleValueAmount, 0); i < _valueList.Count; i++)
+            {
+                int value = _valueList[i];
+                if (value > yMaximum)
+                    yMaximum = value;
+                if (value < yMinimum)
+                    yMinimum = value;
+            }
+            yMaximum = yMaximum + (yMaximum - yMinimum) * 0.2f;
+            yMinimum = yMinimum - (yMaximum - yMinimum) * 0.2f;
+            if (yMaximum == yMinimum)
+            {
+                yMaximum *= 1.2f;
+                yMinimum /= 1.2f;
+            }
+
+            if (_startYScaleAtZero)
+            {
+                yMinimum = 0f;
             }
         }
 
