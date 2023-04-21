@@ -47,7 +47,7 @@ namespace EvanZ.Tools
             _startYScaleAtZero = true;
             _useHorizontalDash = false;
 
-            _valueList = new List<float>() { 5.5f, 23.0f, 12, 4, 45, 80, 105, 203 };
+            _valueList = new List<float>() {};
 
             lineGraphVisual = new(_graphContainer, _dotSprite, Color.white, Color.white);
             barChartVisual = new(_graphContainer, Color.green, .9f);
@@ -59,7 +59,7 @@ namespace EvanZ.Tools
         public void UpdateValueList(List<float> values)
         {
             _valueList = values;
-            ShowGraph(_valueList, barChartVisual, -1);
+            ShowGraph(_valueList, _graphVisual, -1);
         }
 
         public void SetGraphVisualToBar()
