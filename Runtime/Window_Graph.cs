@@ -31,6 +31,7 @@ namespace EvanZ.Tools
         private Func<float, string> _getAxisLabelY = null;
         private float _xSize;
         private bool _startYScaleAtZero;
+        private bool _useHorizontalDash;
 
         private BarChartVisual barChartVisual;
         private LineGraphVisual lineGraphVisual;
@@ -44,6 +45,7 @@ namespace EvanZ.Tools
             _graphVisualObjectsList = new();
             _yLabelList = new();
             _startYScaleAtZero = true;
+            _useHorizontalDash = false;
 
             _valueList = new List<int>() { 5, 23, 12, 4, 45, 80, 105, 203 };
 
@@ -66,6 +68,10 @@ namespace EvanZ.Tools
         public void SetGraphVisualToLine()
         {
             ShowGraph(_valueList, lineGraphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
+        }
+        public void SetHorizontalDash(bool useHorizontalDash)
+        {
+            _useHorizontalDash = useHorizontalDash;
         }
         public void IncreaseVisibleAmount()
         {
@@ -173,11 +179,14 @@ namespace EvanZ.Tools
                 labelX.GetComponent<TMP_Text>().text = _getAxisLabelX(i);
                 _gameObjectsList.Add(labelX.gameObject);
 
-                RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
-                dashX.SetParent(_graphContainer, false);
-                dashX.anchoredPosition = new Vector2(xPosition, -20f);
-                dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
-                _gameObjectsList.Add(dashX.gameObject);
+                if (_useHorizontalDash)
+                {
+                    RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
+                    dashX.SetParent(_graphContainer, false);
+                    dashX.anchoredPosition = new Vector2(xPosition, -20f);
+                    dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
+                    _gameObjectsList.Add(dashX.gameObject);
+                }
 
                 xIndex++;
             }
