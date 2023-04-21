@@ -30,7 +30,11 @@ namespace EvanZ.Tools
         private Func<int, string> _getAxisLabelX = null;
         private Func<float, string> _getAxisLabelY = null;
         private float _xSize;
-        private bool _startYScaleAtZero;
+
+        private bool _customizeStartEnd;
+        private float _startYAt;
+        private float _endYAt;
+
         private bool _useHorizontalDash;
 
         private BarChartVisual barChartVisual;
@@ -44,7 +48,9 @@ namespace EvanZ.Tools
             _gameObjectsList = new();
             _graphVisualObjectsList = new();
             _yLabelList = new();
-            _startYScaleAtZero = true;
+            _customizeStartEnd = false;
+            _startYAt = -1;
+            _endYAt = -1;
             _useHorizontalDash = false;
 
             _valueList = new List<float>() {};
@@ -53,7 +59,6 @@ namespace EvanZ.Tools
             barChartVisual = new(_graphContainer, Color.green, .9f);
 
             ShowGraph(_valueList, lineGraphVisual, -1);
-            UpdateValue(3, 12.6f);
         }
 
         public void UpdateValueList(List<float> values)
@@ -86,6 +91,12 @@ namespace EvanZ.Tools
         {
             _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + " " + unit; };
             ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
+        }
+        public void UseCustomYScale(bool useCustom, float yStart, float yEnd)
+        {
+            _customizeStartEnd = useCustom;
+            _startYAt = yStart;
+            _endYAt = yEnd;
         }
 
         public static void ShowToolTip_Static(string tooltipText, Vector2 anchoredPosition)
@@ -280,9 +291,10 @@ namespace EvanZ.Tools
                 yMinimum /= 1.2f;
             }
 
-            if (_startYScaleAtZero)
+            if (_useHorizontalDash)
             {
-                yMinimum = 0f;
+                yMinimum = _startYAt;
+                yMaximum = _endYAt;
             }
         }
 
