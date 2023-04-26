@@ -27,13 +27,14 @@ namespace EvanZ.Tools
         private List<float> _valueList;
         private IGraphVisual _graphVisual;
         private int _maxVisibleValueAmount = -1;
-        private Func<int, string> _getAxisLabelX = null;
+        private Func<string, string> _getAxisLabelX = null;
         private Func<float, string> _getAxisLabelY = null;
         private float _xSize;
 
         private bool _customizeStartEnd;
         private float _startYAt;
         private float _endYAt;
+        private float _xScaleMultiplier;
 
         private bool _useHorizontalDash;
 
@@ -51,9 +52,10 @@ namespace EvanZ.Tools
             _customizeStartEnd = false;
             _startYAt = -1;
             _endYAt = -1;
+            _xScaleMultiplier = 30;
             _useHorizontalDash = true;
 
-            _valueList = new List<float>() {};
+            _valueList = new List<float>() {15, 2, 23, 2};
 
             lineGraphVisual = new(_graphContainer, _dotSprite, Color.white, Color.white);
             barChartVisual = new(_graphContainer, Color.green, .9f);
@@ -90,12 +92,18 @@ namespace EvanZ.Tools
         public void UseIntY(string unit)
         {
             _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + " " + unit; };
-            ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
         }
         public void UseFloatY(string unit)
         {
             _getAxisLabelY = (float _f) => { return $"{_f:F2}" + " " + unit; };
-            ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
+        }
+        public void ChangeLabelXUnit(string unit)
+        {
+            _getAxisLabelX = (string _i) => { return _i + unit; };
+        }
+        public void ChangeXScaleMultiplier(float scale)
+        {
+            _xScaleMultiplier = scale;
         }
         public void UseCustomYScale(bool useCustom, float yStart, float yEnd)
         {
@@ -135,14 +143,14 @@ namespace EvanZ.Tools
         }
 
         private void ShowGraph(List<float> valueList, IGraphVisual graphVisual,
-            int maxVisibleValueAmount = -1, Func<int, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
+            int maxVisibleValueAmount = -1, Func<string, string> getAxisLabelX = null, Func<float, string> getAxisLabelY = null)
         {
             _valueList = valueList;
             _graphVisual = graphVisual;
 
             if (getAxisLabelX == null)
             {
-                getAxisLabelX = (int _i) => { return _i.ToString(); };
+                getAxisLabelX = (string _i) => { return _i; };
             }
             if (getAxisLabelY == null)
             {
@@ -191,9 +199,22 @@ namespace EvanZ.Tools
                 _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText));
 
                 RectTransform labelX = Instantiate(_labelTemplateX).GetComponent<RectTransform>();
+                int segments = _valueList.Count - 1 - i;
+                string displayTime;
+                if (segments == 0)
+                {
+                    displayTime = "Now";
+                }
+                else 
+                {
+                    TimeSpan time = TimeSpan.FromSeconds(segments * _xScaleMultiplier);
+                    DateTime dateTime = DateTime.Today.Add(time);
+                    displayTime = "-" + dateTime.ToString("mm:ss");
+                }
+
                 labelX.SetParent(_graphContainer, false);
                 labelX.anchoredPosition = new Vector2(xPosition, 0f);
-                labelX.GetComponent<TMP_Text>().text = _getAxisLabelX(i);
+                labelX.GetComponent<TMP_Text>().text = _getAxisLabelX(displayTime);
                 _gameObjectsList.Add(labelX.gameObject);
 
                 if (_useHorizontalDash)
@@ -222,7 +243,7 @@ namespace EvanZ.Tools
                 RectTransform dashY = Instantiate(_dashTemplateY).GetComponent<RectTransform>();
                 dashY.SetParent(_graphContainer, false);
                 dashY.anchoredPosition = new Vector2(4.3f, normalizedValue * graphHeight);
-                dashY.sizeDelta = new Vector2(_graphContainer.sizeDelta.x, dashY.sizeDelta.y);
+                dashY.sizeDelta = new Vector2(_graphContainer.sizeDelta.x - 4.3f, dashY.sizeDelta.y);
                 _gameObjectsList.Add(dashY.gameObject);
             }
         }
