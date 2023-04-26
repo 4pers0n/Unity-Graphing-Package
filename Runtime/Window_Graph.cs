@@ -87,9 +87,14 @@ namespace EvanZ.Tools
         {
             ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount - 1, _getAxisLabelX, _getAxisLabelY);
         }
-        public void ChangeAxisYUnits(string unit)
+        public void UseIntY(string unit)
         {
             _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + " " + unit; };
+            ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
+        }
+        public void UseFloatY(string unit)
+        {
+            _getAxisLabelY = (float _f) => { return $"{_f:F2}" + " " + unit; };
             ShowGraph(_valueList, _graphVisual, _maxVisibleValueAmount, _getAxisLabelX, _getAxisLabelY);
         }
         public void UseCustomYScale(bool useCustom, float yStart, float yEnd)
