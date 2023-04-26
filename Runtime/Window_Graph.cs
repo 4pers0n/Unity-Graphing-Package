@@ -235,7 +235,7 @@ namespace EvanZ.Tools
                 RectTransform labelY = Instantiate(_labelTemplateY).GetComponent<RectTransform>();
                 labelY.SetParent(_graphContainer, false);
                 float normalizedValue = i * 1f / separatorCount;
-                labelY.anchoredPosition = new Vector2(-20f, normalizedValue * graphHeight);
+                labelY.anchoredPosition = new Vector2(-25f, normalizedValue * graphHeight);
                 labelY.GetComponent<TMP_Text>().text = _getAxisLabelY(yMinimum + normalizedValue * (yMaximum - yMinimum));
                 _gameObjectsList.Add(labelY.gameObject);
                 _yLabelList.Add(labelY);
@@ -245,6 +245,20 @@ namespace EvanZ.Tools
                 dashY.anchoredPosition = new Vector2(4.3f, normalizedValue * graphHeight);
                 dashY.sizeDelta = new Vector2(_graphContainer.sizeDelta.x - 4.3f, dashY.sizeDelta.y);
                 _gameObjectsList.Add(dashY.gameObject);
+            }
+            if (_useHorizontalDash)
+            {
+                RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
+                dashX.SetParent(_graphContainer, false);
+                dashX.anchoredPosition = new Vector2(_graphContainer.sizeDelta.x, 0);
+                dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
+                _gameObjectsList.Add(dashX.gameObject);
+
+                dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
+                dashX.SetParent(_graphContainer, false);
+                dashX.anchoredPosition = new Vector2(4.3f, 0);
+                dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
+                _gameObjectsList.Add(dashX.gameObject);
             }
         }
 
