@@ -51,7 +51,7 @@ namespace EvanZ.Tools
             _customizeStartEnd = false;
             _startYAt = -1;
             _endYAt = -1;
-            _useHorizontalDash = false;
+            _useHorizontalDash = true;
 
             _valueList = new List<float>() {};
 
@@ -200,7 +200,7 @@ namespace EvanZ.Tools
                 {
                     RectTransform dashX = Instantiate(_dashTemplateX).GetComponent<RectTransform>();
                     dashX.SetParent(_graphContainer, false);
-                    dashX.anchoredPosition = new Vector2(xPosition, -20f);
+                    dashX.anchoredPosition = new Vector2(xPosition, 0);
                     dashX.sizeDelta = new Vector2(_graphContainer.sizeDelta.y, dashX.sizeDelta.y);
                     _gameObjectsList.Add(dashX.gameObject);
                 }
