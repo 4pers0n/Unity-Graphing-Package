@@ -194,9 +194,12 @@ namespace EvanZ.Tools
             {
                 float xPosition = _xSize + xIndex * _xSize;
                 float yPosition = (_valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
-
                 string toolTipText = _valueList[i].ToString();
-                _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText));
+
+                if (i == _valueList.Count - 1)
+                    _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText, true));
+                else
+                    _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText, false));
 
                 RectTransform labelX = Instantiate(_labelTemplateX).GetComponent<RectTransform>();
                 int segments = _valueList.Count - 1 - i;
@@ -340,7 +343,7 @@ namespace EvanZ.Tools
 
         private interface IGraphVisual
         {
-            IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText);
+            IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText, bool isCreateDot);
         }
 
         private interface IGraphVisualObject
@@ -362,7 +365,7 @@ namespace EvanZ.Tools
                 _barWidthMultiplier = barWidthMultiplier;
             }
 
-            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
+            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText, bool isCreateDot)
             {
                 GameObject barGameObject = CreateBar(graphPosition, graphPositionWidth * _barWidthMultiplier);
 
@@ -409,11 +412,15 @@ namespace EvanZ.Tools
 
             public void ResetLastDotGameObject() => _lastLineGraphVisualObject = null;
 
-            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText)
+            public IGraphVisualObject CreatGraphVisualObject(Vector2 graphPosition, float graphPositionWidth, string toolTipText, bool isCreateDot)
             {
                 List<GameObject> gameObjectsList = new();
                 GameObject dotGameObject = CreateDot(graphPosition);
-
+                if (!isCreateDot)
+                {
+                    dotGameObject.GetComponent<Image>().enabled = false;
+                    dotGameObject.GetComponent<PressableButton>().enabled = false;
+                }
                 gameObjectsList.Add(dotGameObject);
                 GameObject dotConnectionGameObject = null;
                 if (_lastLineGraphVisualObject != null)
