@@ -91,11 +91,11 @@ namespace EvanZ.Tools
         }
         public void UseIntY(string unit)
         {
-            _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + " " + unit; };
+            _getAxisLabelY = (float _f) => { return Mathf.RoundToInt(_f).ToString() + unit; };
         }
         public void UseFloatY(string unit)
         {
-            _getAxisLabelY = (float _f) => { return $"{_f:F2}" + " " + unit; };
+            _getAxisLabelY = (float _f) => { return $"{_f:F2}" + unit; };
         }
         public void ChangeLabelXUnit(string unit)
         {
