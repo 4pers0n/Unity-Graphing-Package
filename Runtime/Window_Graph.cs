@@ -37,6 +37,7 @@ namespace EvanZ.Tools
         private float _xScaleMultiplier;
 
         private bool _useHorizontalDash;
+        private static bool _useGazeTooltip;
 
         private BarChartVisual barChartVisual;
         private LineGraphVisual lineGraphVisual;
@@ -50,6 +51,7 @@ namespace EvanZ.Tools
             _graphVisualObjectsList = new();
             _yLabelList = new();
             _customizeStartEnd = false;
+            _useGazeTooltip = true;
             _startYAt = -1;
             _endYAt = -1;
             _xScaleMultiplier = 30;
@@ -110,6 +112,11 @@ namespace EvanZ.Tools
             _customizeStartEnd = useCustom;
             _startYAt = yStart;
             _endYAt = yEnd;
+        }
+
+        public void UseGazeTooltip(bool useGaze)
+        {
+            _useGazeTooltip = useGaze;
         }
 
         public static void ShowToolTip_Static(string tooltipText, Vector2 anchoredPosition)
@@ -537,8 +544,15 @@ namespace EvanZ.Tools
                 boxCollider.size = new Vector3(rectTransform.sizeDelta.x, rectTransform.sizeDelta.y, 1.0f);
                 boxCollider.center = new Vector3(0, 0, 0);
                 PressableButton pressableButton = _dotGameObject.GetComponent<PressableButton>();
-                pressableButton.IsGazeHovered.OnEntered.AddListener((t) => ShowToolTip_Static(toolTipText, graphPosition));
-                pressableButton.IsGazeHovered.OnExited.AddListener((t) => HideToolTip_Static());
+                if (_useGazeTooltip)
+                {
+                    pressableButton.IsGazeHovered.OnEntered.AddListener((t) => ShowToolTip_Static(toolTipText, graphPosition));
+                    pressableButton.IsGazeHovered.OnExited.AddListener((t) => HideToolTip_Static());
+                }
+                else
+                {
+                    ShowToolTip_Static(toolTipText, graphPosition);
+                }
 
                 OnChangeGraphVisualObjectInfo?.Invoke(this, EventArgs.Empty);
             }
