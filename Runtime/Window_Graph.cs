@@ -57,7 +57,7 @@ namespace EvanZ.Tools
             _xScaleMultiplier = 30;
             _useHorizontalDash = true;
 
-            _valueList = new List<float>() {15, 2, 23, 2};
+            _valueList = new List<float>() {};
 
             lineGraphVisual = new(_graphContainer, _dotSprite, Color.white, Color.white);
             barChartVisual = new(_graphContainer, Color.green, .9f);
@@ -201,7 +201,7 @@ namespace EvanZ.Tools
             {
                 float xPosition = _xSize + xIndex * _xSize;
                 float yPosition = (_valueList[i] - yMinimum) / (yMaximum - yMinimum) * graphHeight;
-                string toolTipText = _valueList[i].ToString();
+                string toolTipText = _getAxisLabelY(_valueList[i]);
 
                 if (i == _valueList.Count - 1)
                     _graphVisualObjectsList.Add(_graphVisual.CreatGraphVisualObject(new Vector2(xPosition, yPosition), _xSize, toolTipText, true));
