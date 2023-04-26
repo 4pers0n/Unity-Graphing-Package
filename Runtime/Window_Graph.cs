@@ -66,7 +66,7 @@ namespace EvanZ.Tools
         public void UpdateValueList(List<float> values)
         {
             _valueList = values;
-            ShowGraph(_valueList, _graphVisual, -1);
+            ShowGraph(_valueList, _graphVisual, -1, _getAxisLabelX, _getAxisLabelY);
         }
 
         public void SetGraphVisualToBar()
